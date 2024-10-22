@@ -1,0 +1,60 @@
+---
+import NotificationCard from './NotificationCard.astro';
+import type {Notification} from '@/services/notificationService';
+
+export interface Props {
+    notifications: Notification[];
+}
+const { notifications } = Astro.props;
+---
+<div class="splide" id="splide-notifications" role="group" aria-label="Splide Basic HTML Example">
+    <div class="splide__track h-full">
+        <ul class="splide__list">
+            {notifications.map((notification) => (
+                <NotificationCard id={notification.id} user_id={notification.user_id} title={notification.title} message={notification.message} />
+            ))}
+        </ul>
+    </div>
+</div>
+<!--mark all as read button delete after click-->
+<button
+    class="text-right text-gray-500 dark:text-gray-300 hover:text-gray-700 dark:hover:text-gray-200 font-semibold text-md mt-2"
+    hx-put=`/api/users/${notifications[0].user_id}/notifications`
+    hx-swap="delete transition:true"
+    hx-vals='{"is_read": "true"}'
+    hx-target="#splide-notifications"
+    hx-on--after-request="if (event.detail.successful) this.remove();"
+    id="mark-all-as-read"
+    >Marcar todas como leídas
+</button>
+<script>
+    import Splide from '@splidejs/splide';
+    document.addEventListener('astro:page-load', () => {
+        new Splide('#splide-notifications', {
+            perPage: 2,
+            gap: '1rem',
+            direction: 'ttb',
+            height: '10rem',
+            autoplay: true,
+            interval: 3000,
+            rewind: true,
+        }).mount();
+
+        // if notifications are empty, remove mark all as read button
+        document.addEventListener('htmx:afterRequest', function(e) {
+            const event = e as CustomEvent;
+
+            if (event.detail.target.id.startsWith('splide-notifications-slide') && event.detail.successful) {
+                const splide_list = document.querySelector('.splide__list') as HTMLUListElement;
+                if (splide_list && splide_list.children.length < 2) {//the swap is done after this event triggers
+                    const markAllAsReadButton = document.querySelector('#mark-all-as-read');
+                    const splide = document.querySelector('.splide') as HTMLDivElement;
+                    if (markAllAsReadButton && splide) {
+                        splide.remove();
+                        markAllAsReadButton.remove();
+                    }
+                }
+            }
+        });
+    });
+</script>

@@ -1,0 +1,74 @@
+---
+export const prerender = false;
+interface Props {
+    className?: string;
+    href: string;
+    gen_question: string;
+    recorrido_title: string;
+    teacherImage: string | null;
+    teacher: string;
+    end_date: string | null;
+    start_date: string;
+    code: string;
+    title: string;
+}
+
+const { title, code,  gen_question, start_date, end_date, teacherImage, teacher, recorrido_title, href, className } = Astro.props;
+
+function formatDatetime(ts:string) {
+    const date = new Date(ts);
+    return date.toLocaleString('es-ES', { day:"numeric", month:"short", hour: '2-digit', minute: '2-digit', hour12: false });
+}
+
+const desc = 
+  'Clase de ' + recorrido_title + 
+  (new Date(start_date) < new Date() ? 
+    ' - Inicio ' : 
+    ' - Inicia ' 
+  ) + formatDatetime(start_date) +
+  (end_date ? 
+    (new Date(end_date) < new Date() ?
+      ' - Finalizó' : 
+      ' - Finaliza '
+    ) + formatDatetime(end_date)
+    : ''
+  );
+---
+<li class=`rounded-lg bg-white dark:bg-lilac-600 cursor-pointer transition-all ${className}`>
+    <a href={href} data-question={gen_question} class="flex flex-col h-full pb-8">
+        <div class="flex items-center justify-center bg-lilac-500 dark:bg-lilac-700 rounded-t-lg mb-2 min-h-16 p-1 transition-colors duration-500">
+            <h2 class="text-white text-center text-xl font-bold">{title.toUpperCase()}</h2>
+        </div>
+        <div class="flex flex-col justify-center gap-2 flex-1 px-8">
+            <p class="text-gray-500 dark:text-gray-300 text-center font-semibold">{desc}</p>
+            <div class="flex items-center gap-2">
+                <img src={teacherImage} alt="teacher" class="size-10 rounded-full" />
+                <div>
+                    <p class="text-gray-500 dark:text-gray-300 font-semibold">Profesor:</p>
+                    <p class="text-gray-700 dark:text-white font-semibold">{teacher}</p>
+                </div>
+            </div>
+            <span class="flex-grow"></span>
+            <h3 class="text-white dark:text-lilac-400 bg-lilac-500 dark:bg-white text-lg font-medium text-center rounded-md py-2 transition-colors duration-500">
+                Código: <span class="text-xl font-bold">{code.toUpperCase()}</span>
+            </h3>
+        </div>
+    </a>
+</li>
+<!--<script>-->
+<!--document.addEventListener('astro:page-load', () => {-->
+    <!--const anchors = document.querySelectorAll('a[data-question]');-->
+    
+    <!--anchors.forEach(anchor => {-->
+        <!--anchor.addEventListener('mouseenter', (event) => {-->
+            <!--event.preventDefault();-->
+        <!--});-->
+        <!--anchor.addEventListener('click', (e) => {-->
+            <!--const question = anchor.getAttribute('data-question');-->
+            <!--if (question) {-->
+                <!--document.cookie = `gen_question=${question}; path=/;`;-->
+            <!--}-->
+        <!--});-->
+    <!--});-->
+<!--});-->
+<!--</script>-->

@@ -1,0 +1,48 @@
+---
+export interface Props {
+    iterable: ({id: string, title: string, endpoint: string})[];
+}
+const { iterable } = Astro.props as Props;
+---
+<ul id="tablist" class="flex overflow-x-wrap gap-4 mb-4 border-b-2 border-gray-300">
+    {iterable.map((it) => (
+    <li class="text-sm font-semibold text-lilac-400 dark:text-white border-b-4 border-transparent -mb-[0.15rem] pb-2">
+        <button data-recorrido-id={it.id} hx-get={it.endpoint} hx-target="#tab-content" class="whitespace-nowrap" role="tab">{it.title}</button>
+    </li>
+    ))}
+</ul>
+<script>
+    import { currentRecorrido } from "@/store.ts";
+
+    document.addEventListener('astro:page-load', () => {
+        const tabsButtons = document.querySelectorAll('button[data-recorrido-id]') as NodeListOf<HTMLButtonElement>;
+
+        tabsButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                //quitar la clase selected de todos los botones
+                tabsButtons.forEach(button => {
+                    button.parentElement?.classList.toggle('selected-recorrido', button === this);
+                });
+                // Actualizar el valor del store de Nanostores
+                currentRecorrido.set(this.getAttribute('data-recorrido-id') || '');
+            });
+        });
+
+        // Inicializar el recorrido seleccionado
+        if (tabsButtons.length > 0) {
+            const url = new URL(window.location.href);
+            const recorrido_id = url.searchParams.get('recorrido_id');
+
+            // Si hay un recorrido_id en la URL, seleccionar ese recorrido
+            if (recorrido_id) {
+                tabsButtons.forEach(button => {
+                    if (button.getAttribute('data-recorrido-id') === recorrido_id) {
+                        button.click();
+                    }
+                });
+            } else {
+                tabsButtons[0].click();
+            }
+        }
+    });
+</script>

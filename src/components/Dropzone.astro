@@ -1,0 +1,84 @@
+---
+export interface Props {
+    endpoint: string;
+    files?: {
+        filePath: string;
+        fileName: string;
+        mime: string;
+        fileSize:number;
+    }[];
+    editable: boolean;
+}
+const { endpoint, files, editable } = Astro.props;
+//console.debug(endpoint, files, editable);
+---
+<form action={endpoint} class="dropzone p-4 bg-lilac-100 dark:bg-lilac-800 rounded-xl transition-colors" id="attachment" data-filePath={files && files.length > 0 ? files[0].filePath : ''} data-fileName={files && files.length > 0 ? files[0].fileName : ''} data-fileSize={files && files.length > 0 ? files[0].fileSize : 0} data-mime={files && files.length > 0 ? files[0].mime : ''}>
+    <!-- Mensaje de arrastrar y soltar -->
+    <div class="dz-message flex gap-4 flex-1 items-center justify-center text-center bg-white border border-dashed border-gray-300 dark:border-lilac-400 rounded-xl p-2 transition-all dark:bg-lilac-700" data-dz-message style="margin: 0px !important;">
+        <!-- SVG para darle estilo -->
+        <span class="p-3 bg-lilac-100 dark:bg-lilac-800 text-gray-800 dark:text-gray-100 rounded-full hover:bg-gray-200 dark:hover:bg-lilac-900 group transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6 group-hover:animate-bounce transition-all"> <path stroke-linecap="round" stroke-linejoin="round" d="M9 8.25H7.5a2.25 2.25 0 0 0-2.25 2.25v9a2.25 2.25 0 0 0 2.25 2.25h9a2.25 2.25 0 0 0 2.25-2.25v-9a2.25 2.25 0 0 0-2.25-2.25H15m0-3-3-3m0 0-3 3m3-3V15" />
+            </svg>
+        </span>
+        <!-- Título atractivo -->
+        <div class="flex flex-col gap-1">
+            <div class="flex flex-wrap justify-center text-sm gap-1 ">
+                <span class="font-medium text-gray-700 dark:text-gray-200">Suelta un archivo aqui o</span>
+                <span class="font-semibold text-lilac-400 hover:text-lilac-300 hover:underline decoration-2">buscalo</span>
+            </div>
+            <p class="text-xs text-gray-500 dark:text-gray-400">PNG, JPG, PDF, DOC (MAX. 5MB)</p>
+        </div>
+    </div>
+    <div class="mt-0 space-y-0 empty:mt-0" data-hs-file-upload-previews=""></div>
+</form>
+<script>
+    import Dropzone from 'dropzone';
+    import template from '../templatePreview.html?raw';
+    console.debug(template);
+
+    document.addEventListener('astro:page-load', () => {
+        const endpoint = document.getElementById('attachment')?.getAttribute('action');
+        const filePath = document.getElementById('attachment')?.getAttribute('data-filePath');
+        const fileName = document.getElementById('attachment')?.getAttribute('data-fileName');
+        const fileSize = document.getElementById('attachment')?.getAttribute('data-fileSize') as unknown as number;
+        const mime = document.getElementById('attachment')?.getAttribute('data-mime');
+        console.debug(endpoint, filePath, fileName, fileSize, mime);
+
+        Dropzone.autoDiscover = false;
+
+        let myDropzone = new Dropzone("#attachment", {
+            capture: "camera",
+            uploadMultiple: false,
+            thumbnailWidth: 60,
+            thumbnailHeight: 60,
+            maxFiles: 1,
+            maxFilesize: 5,
+            acceptedFiles: "image/*, application/pdf, application/msword, application/vnd.ms-excel, application/vnd.ms-powerpoint, text/plain",
+            previewTemplate: template,
+        });
+        myDropzone.on("addedfile", function(file) {
+            // si ya hay un archivo cargado, eliminarlo
+            if (myDropzone.files.length > 1) {
+                myDropzone.removeFile(myDropzone.files[0]);
+            }
+        });
+
+        myDropzone.on("removedfile", function(file) {
+            // delete file from server
+            if (file.accepted && endpoint) {
+                fetch(endpoint, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                });
+            }
+        });
+
+        if (filePath && fileName && fileSize && mime) {
+            const mockFile = { name: fileName, size: 1, accepted: true };
+            const url = filePath.startsWith('http') ? filePath : `/api/${filePath}`;
+            myDropzone.displayExistingFile(mockFile, url);
+        }
+    });
+</script>

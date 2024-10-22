@@ -1,0 +1,52 @@
+---
+export const prerender = false;
+interface Props {
+    id: string;
+    type: string;
+    details: string | null;
+    extra_details?: string | null;
+    rating?: number;
+    editable: boolean;
+}
+
+const { id, type, details = '', extra_details = '', rating = 1, editable } = Astro.props;
+
+const info: Record<string, { text: string, placeholder: string }> = {
+    book: { text: 'Libro', placeholder: 'Nombre'},
+    web: { text: 'Sitio web', placeholder: 'URL del sitio web' },
+    article: { text: 'Artículo de investigación', placeholder: 'URL del artículo' },
+    video: { text: 'Video', placeholder: 'URL del video' },
+    ia: { text: 'Chatbot/IA', placeholder: 'URL del chatbot o IA' },
+    notes: { text: 'Apuntes propios', placeholder: 'Describalos brevemente' },
+    other: { text: 'Otro', placeholder: 'Detalle cuales' }
+};
+---
+<tr class="border-b dark:border-lilac-400" id={"row-" + id}>
+    <td class="py-4 pl-2"><p>{info[type].text}</p></td>
+    <td class="py-4">
+        <div class="flex gap-2 pr-2">
+            <input name=`${id}.details` placeholder={info[type].placeholder} value={details} {...(!editable ? { disabled: true } : {})} class="p-1 w-full dark:bg-lilac-700 border-b-2 dark:border-b-lilac-800 focus:border-b-lilac-500 dark:focus:border-b-lilac-600 focus:outline-none transition-colors"/>
+            <!-- Si es type book agrega otro input con la editorial -->
+            {type === 'book' && <input name=`${id}.extra_details` class="p-1 w-full dark:bg-lilac-700 border-b-2 dark:border-b-lilac-800 dark:focus:border-b-lilac-600 focus:outline-none focus:border-b-lilac-500 transition-colors" placeholder="Editorial" value={extra_details} {...(!editable ? { disabled: true } : {})} />}
+        </div>
+    </td>
+    <td class="py-4 text-center">
+        <input type="number" value={rating} name=`${id}.rating` min="1" max="5" class="p-1 text-center dark:bg-lilac-700 border-b-2 dark:border-b-lilac-800 dark:focus:border-b-lilac-600 w-8 focus:outline-none focus:border-b-lilac-500 transition-colors" {...(!editable ? { disabled: true } : {})}>
+    </td>
+    {editable &&
+    <td class="py-4 pr-2 text-center">
+        <button
+            type="button"
+            hx-delete=`/api/source/${id}`
+            hx-params="none"
+            hx-target={"#row-" + id}
+            hx-swap="delete transition:true"
+            class="text-red-500 hover:-translate-y-1 hover:scale-110 transition ease-in-out delay-75"
+        >
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6 inline-block">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+            </svg>
+        </button>
+    </td>
+    }
+</tr>

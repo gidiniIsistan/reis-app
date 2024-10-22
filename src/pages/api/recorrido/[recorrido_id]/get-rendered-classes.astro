@@ -1,0 +1,50 @@
+---
+import ClassCard from "@/components/ClassCard.astro";
+import { GET } from './classes.ts';
+import {HttpError} from "@/errors/HttpError";
+import {checkSession} from "@/services/authService";
+import {errorHandler} from "@/errors/errorHandler";
+
+export const partial = true;
+var data: Record<string, any>[] = [];
+var teacher: boolean = false;
+
+try {
+    if (Astro.request.method !== 'GET') {
+        throw new HttpError(405, 'Method Not Allowed', `${Astro.request.method} is not allowed`, { value: 'GET' });
+    }
+
+    const { recorrido_id } = Astro.params;
+    if (!recorrido_id) {
+        throw new HttpError(400, 'Bad Request', 'recorrido_id is required');
+    }
+
+    const session = await checkSession(Astro.request);
+    teacher = session?.user?.role === "teacher";
+
+    //get classes from /api/recorrido/:recorrido_id/classes
+    const response = await GET(Astro);
+    const responseData = await response.json();
+
+    if (!responseData.success) {
+        throw new HttpError(responseData.status, responseData.title, responseData.detail);
+    }
+    data = responseData.data;
+} catch (error) {
+    return errorHandler(error);
+}
+---
+{data.map((cls) => (
+    <ClassCard 
+        title={cls.title}
+        code={cls.entercode}
+        gen_question={cls.gen_question}
+        start_date={cls.start_date}
+        end_date={cls.end_date}
+        teacher={cls.teacher}
+        teacherImage={cls.teacherImg}
+        recorrido_title={cls.recorrido_title}
+        href={teacher ? `/class/${cls.id}/view` : `/class/${cls.id}/group/${cls.group_id}`}
+        className="transform hover:scale-105"
+    />
+))}

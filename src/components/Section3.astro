@@ -1,0 +1,45 @@
+---
+export interface Props {
+    editable: boolean;
+    subject: string;
+    topic: string;
+    issues: string | null;
+    endpoint: string;
+}
+const { editable, subject, topic, issues, endpoint } = Astro.props;
+---
+<form
+    hx-put={endpoint}
+    hx-trigger="keyup delay:500ms"
+    hx-swap="none"
+    class="section flex flex-col items-center justify-around h-full overflow-auto"
+>
+    <button type="submit" class="hidden"></button>
+    <label for="subject" class="text-lg font-semibold">¿A qué disciplinas recurrieron para responder esta pregunta?</label>
+    <textarea
+        id="subject"
+        name="subject"
+        oninput="this.style.height = ''; this.style.height = Math.min(parseInt(this.scrollHeight), 100) + 'px'"
+        readonly={editable ? false : true}
+        class="w-full min-h-11 px-2 py-2 dark:bg-lilac-700 border-b-2 dark:border-lilac-800 dark:focus:border-b-lilac-500 focus:outline-none focus:border-lilac-500 mb-4 resize-none transition-colors"
+        placeholder="Por ejemplo, Matemática, Historia, Economía, etc."
+    >{subject}</textarea>
+    <label for="topic" class="text-lg font-semibold">¿A qué temas específicos de esas disciplinas tuvieron que recurrir para poder construir la respuesta?</label>
+    <textarea
+        id="topic"
+        name="topic"
+        oninput="this.style.height = ''; this.style.height = Math.min(parseInt(this.scrollHeight), 100) + 'px'"
+        readonly={editable ? false : true}
+        class="w-full min-h-11 px-2 py-2 dark:bg-lilac-700 border-b-2 dark:border-lilac-800 dark:focus:border-b-lilac-500 focus:outline-none focus:border-lilac-500 mb-4 resize-none transition-colors"
+        placeholder="Por ejemplo, en Matemática sistema de ecuaciones y en Economía, modelo de oferta y de demanda"
+    >{topic}</textarea>
+    <label for="issues" class="text-lg font-semibold">¿Que dificultades encontraron para responder las preguntas?</label>
+    <textarea
+        id="issues"
+        name="issues"
+        oninput="this.style.height = ''; this.style.height = Math.min(parseInt(this.scrollHeight), 100) + 'px'"
+        readonly={editable ? false : true}
+        class="w-full min-h-11 px-2 py-2 dark:bg-lilac-700 border-b-2 dark:border-lilac-800 dark:focus:border-b-lilac-500 focus:outline-none focus:border-lilac-500 mb-4 resize-none transition-colors"
+        placeholder="Describir las dificultades encontradas durante las clase en relacion a responder las preguntas, a lograr acuerdo con todos los miembros del gurpo, a la dinamica de la clase, etc."
+    >{issues}</textarea>
+</form>

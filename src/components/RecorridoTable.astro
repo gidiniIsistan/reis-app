@@ -1,0 +1,29 @@
+---
+import RecorridoCard from './RecorridoCard.astro';
+import type { Recorrido } from '@/services/recorridoService';
+
+export interface Props {
+    recorridos: Recorrido[];
+}
+const { recorridos } = Astro.props;
+---
+<div class="flex flex-col overflow-hidden">
+    <!-- Lista de Recorridos -->
+    <div class="overflow-y-auto shadow-md rounded-lg">
+        <table class="text-sm w-full text-left">
+            <thead class="text-xs text-white uppercase bg-lilac-500">
+                <tr>
+                    <th scope="col" class="py-3 px-3">Titulo</th>
+                    <th scope="col" class="py-3 pr-3">Pregunta Generatriz</th>
+                    <th scope="col" class="py-3 pr-3 text-center">Editar</th>
+                    <th scope="col" class="py-3 pr-3 text-center">Ver clases</th>
+                </tr>
+            </thead>
+            <tbody id="group-list" class="text-gray-700 dark:text-white text-lg font-semibold">
+                {recorridos.map((recorrido) => (
+                    <RecorridoCard id={recorrido.id} title={recorrido.title} gen_question={recorrido.gen_question} is_active={recorrido.is_active === 1} />
+                ))}
+            </tbody>
+        </table>
+    </div>
+</div>

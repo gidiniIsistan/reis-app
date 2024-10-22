@@ -1,0 +1,19 @@
+---
+export const prerender = true;
+export interface Props {
+    group_id: string;
+    class_id: string;
+    question: string;
+    id: string;
+}
+
+const { id, question, class_id, group_id } = Astro.props;
+---
+
+<li class="rounded-lg card-link bg-lilac-500 dark:bg-lilac-600 hover:bg-lilac-600 dark:hover:bg-lilac-800 cursor-pointer transition-colors" data-id={id}>
+    <a href=`/class/${class_id}/group/${group_id}/dx_question/${id}`>
+        <h2 class="text-white text-xl font-semibold p-4">
+            {question}
+        </h2>
+    </a>
+</li>

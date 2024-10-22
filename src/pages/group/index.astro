@@ -1,0 +1,31 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import Tabs from '@/components/Tabs.astro';
+
+import { getUserRecorridos, type Recorrido } from '@/services/recorridoService';
+import { checkSession } from '@/services/authService';
+import { errorHandler } from '@/errors/errorHandler';
+
+let recorridos: (Recorrido & {group_id: string})[] = [];
+try {
+    const session = await checkSession(Astro.request);
+    recorridos = await getUserRecorridos(session.user.id);
+} catch (error) {
+    return errorHandler(error);
+}
+
+const tabs = recorridos.map((recorrido) => ({
+    id: recorrido.id,
+    title: recorrido.title,
+    endpoint: `/api/group/${recorrido.group_id}/get-group-table`
+}));
+---
+<BaseLayout title="Mis clases">
+    <div class="max-w-3xl mx-auto h-full w-full p-8">
+        <div class="flex flex-col w-full h-full bg-white dark:bg-lilac-700 rounded-lg p-8 transition-colors">
+            <h1 class="text-4xl font-bold text-center mb-4 text-gray-700 dark:text-white">Mi Grupo</h1>
+            <Tabs iterable={tabs} />
+            <div class="flex flex-col" id="tab-content"></div>
+        </div>
+    </div>
+</BaseLayout>

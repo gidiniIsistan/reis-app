@@ -1,0 +1,77 @@
+---
+import Dropzone from '@/components/Dropzone.astro';
+
+export interface Props {
+    editable: boolean;
+    answer: string | null;
+    name: string;
+    endpoint: string;
+    attachments?: {
+        filePath: string;
+        fileName: string;
+        mime: string;
+        fileSize: number;
+    }[];
+}
+const { editable, answer, name, endpoint, attachments } = Astro.props;
+---
+<div class="flex flex-col justify-center flex-1 w-full">
+    <label class="flex mx-auto items-center mb-8 cursor-pointer">
+        <span class="me-3 text-xl font-semibold">No</span>
+        <input
+            id="switch-conditional"
+            type="checkbox"
+            class="sr-only peer"
+            {...answer ? { checked: true } : {}}
+            {...(!editable ? { disabled: true } : {})}
+        />
+        <div class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+        <span class="ms-3 text-xl font-semibold">Si</span>
+    </label>
+    <div id="conditional-container" class="max-h-0 flex flex-col flex-1 w-full overflow-hidden transition-all duration-500 ease-in-out">
+        <!-- dropzone -->
+        <p class="font-semibold">Adjuntar archivo:</p>
+        <Dropzone endpoint=`${endpoint}/attachment` files={attachments} editable={editable} />
+        <!-- textarea -->
+        <p class="mt-4 font-semibold">Detallar la respuesta aportada a la pregunta:</p>
+        <textarea
+            id="conditional-answer"
+            name={name}
+            hx-put={endpoint}
+            hx-trigger="keyup changed delay:1500ms"
+            hx-swap="none"
+            readonly={editable ? false : true}
+            class="flex-grow p-4 border-2 border-transparent focus:outline-none bg-lilac-100 dark:bg-lilac-800 focus:border-lilac-500 rounded-lg resize-none transition-colors"
+        >{answer}</textarea>
+    </div>
+</div>
+<script>
+document.addEventListener('astro:page-load', () => {
+    const checkboxDx = document.getElementById('switch-conditional') as HTMLInputElement;
+    const containerDx = document.getElementById('conditional-container');
+    const textAreaDx = document.getElementById('conditional-answer') as HTMLTextAreaElement;
+    const nextButton = document.getElementById('next-btn');
+    const saveButton = document.getElementById('save-btn');
+
+    if (!checkboxDx || !containerDx || !textAreaDx) {
+        console.debug('DEBUG: No se encontraron los elementos ConditionalAnswer');
+        return;
+    };
+    console.debug('DEBUG: Se encontraron los elementos ConditionalAnswer');
+
+    checkboxDx.addEventListener('change', () => {
+        console.debug('DEBUG: Cambio en el checkbox');
+        if (checkboxDx.checked) {
+            containerDx.classList.remove('max-h-0');
+            saveButton?.classList.add('hidden');
+            nextButton?.classList.remove('hidden');
+        } else {
+            containerDx.classList.add('max-h-0');
+            saveButton?.classList.remove('hidden');
+            nextButton?.classList.add('hidden');
+            textAreaDx.value = '';
+        }
+    });
+    checkboxDx.dispatchEvent(new Event('change'));
+});
+</script>

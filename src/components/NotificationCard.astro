@@ -1,0 +1,28 @@
+---
+export interface Props {
+    id: string
+    user_id: string;
+    title: string;
+    message: string;
+}
+
+const { id, user_id, title, message } = Astro.props;
+---
+<li class="splide__slide bg-white dark:bg-lilac-600 rounded-lg p-2" id={'notification-' + id}>
+    <div class="flex justify-between">
+        <h3 class="text-lg font-semibold text-gray-700 dark:text-white">{title}</h3>
+        <button
+            hx-put=`/api/users/${user_id}/notifications/${id}`
+            hx-swap="delete transition:true"
+            hx-vals='{"is_read": "true"}'
+            hx-trigger="click"
+            hx-target="closest li"
+            class="text-red-500 z-100 hover:-translate-y-1 hover:scale-110 transition ease-in-out delay-75"
+        >
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6 inline-block">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+            </svg>
+        </button>
+    </div>
+    <p class="text-gray-500 dark:text-gray-300">{message}</p>
+</li>

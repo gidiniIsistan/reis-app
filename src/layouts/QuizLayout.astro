@@ -1,0 +1,72 @@
+---
+interface Props {
+    title: string;
+}
+const { title } = Astro.props;
+
+import BaseLayout from './BaseLayout.astro';
+import QuestionsBox from '@/components/QuestionsBox.astro';
+import BackButton from '@/components/BackButton.astro';
+import QuizHeader from '@/components/QuizHeader.astro';
+import {getClassById, type ClassType} from '@/services/classService';
+import { checkSession } from '@/services/authService';
+import { HttpError } from '@/errors/HttpError';
+import { errorHandler } from '@/errors/errorHandler';
+
+const { class_id } = Astro.params;
+let cls: ClassType & {recorrido_title: string, gen_question: string, teacher: string, teacherImg: string | null};
+let teacher = false;
+
+try {
+    if (!class_id) {
+        throw new HttpError(400, 'Bad request', 'Missing class_id');
+    }
+
+    const session = await checkSession(Astro.request);
+    teacher = session.user.role === "teacher";
+    
+    cls = await getClassById(class_id);
+    if (!cls) {
+        throw new HttpError(404, 'Not found', 'Class not found');
+    }
+} catch (error) {
+    return errorHandler(error);
+}
+
+function formatDatetime(ts:string) {
+    const date = new Date(ts);
+    return date.toLocaleString('es-ES', { day:"numeric", month:"short", hour: '2-digit', minute: '2-digit', hour12: false });
+}
+---
+<BaseLayout title='Quiz page'>
+    <main class="flex px-8 w-full h-full justify-center">
+        <div class="flex flex-col min-w-[44rem] max-w-[66rem] flex-1">
+            <!-- Admin butttons -->
+            {teacher &&
+            <div class="flex items-center justify-between w-auto bg-gradient-to-r from-lilac-500 to-lilac-600 dark:from-lilac-700 dark:to-lilac-800 text-white px-4 pt-4 transition-colors">
+                <BackButton href=`/class/${class_id}/view` text={true} />
+                <p class="text-lilac-100 dark:text-white text-center">Modo Vista</p>
+            </div>
+            }
+            <QuizHeader
+                title={cls.title}
+                description={cls.desc}
+                start_date={formatDatetime(cls.start_date)}
+                end_date={cls.end_date ? formatDatetime(cls.end_date) : 'Sin fecha de cierre'}
+                recorrido_title={cls.recorrido_title}
+                gen_question={cls.gen_question}
+                teacher={cls.teacher}
+                teacher_img={cls.teacherImg}
+            />
+            <div class="flex gap-8 mt-8 h-full rounded-t-2xl">
+                <div class="bg-white dark:bg-lilac-700 min-w-[30rem] max-w-2xl rounded-t-xl flex flex-col h-full flex-1 flex-shrink transition-all">
+                    <h2 class="text-xl font-semibold bg-lilac-500 dark:bg-lilac-800 text-center py-3 text-white rounded-t-xl transition-colors">{title}</h2>
+                    <slot>
+                        <p class="text-lg font-semibold text-gray-400 text-center my-auto">Selecciona una pregunta del panel derecho</p>
+                    </slot>
+                </div>
+                <QuestionsBox />
+            </div>
+        </div>
+    </main>
+</BaseLayout>

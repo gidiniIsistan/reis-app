@@ -1,0 +1,125 @@
+.custom-radio:checked + .custom-radio-icon .custom-radio-icon-svg {
+    visibility: visible;
+    opacity: 1;
+}
+
+.custom-radio-icon .custom-radio-icon-svg {
+    visibility: hidden;
+    opacity: 0;
+}
+
+.custom-checked .radio-element {
+    border: 2px solid #6d28d9;
+    /*box-shadow: 0 0 0 2px #4338ca;*/
+    transition-property: border;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 150ms;
+}
+
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.selected-recorrido {
+    border-color: #6d28d9 !important;
+}
+
+.dropzone {
+    display: flex;
+    max-width: 100%;
+    min-height: 0;
+    padding: 0.75rem;
+}
+
+.dz-error-mark {
+    background-color: transparent;
+    opacity: 1;
+    left: 50%;
+    top: 0;
+    margin: 0;
+    width: fit-content;
+    height: fit-content;
+}
+
+.dz-error-mark svg {
+    stroke: #f87171;
+    stroke-width: 2;
+    width: 2rem;
+    height: 2rem;
+    fill: white;
+}
+
+.dz-success-mark {
+    background-color: transparent;
+    opacity: 1;
+    left: 50%;
+    top: 0;
+    margin: 0;
+    width: fit-content;
+    height: fit-content;
+}
+
+.dz-success-mark svg {
+    width: 2rem;
+    height: 2rem;
+    fill: white;
+    stroke: #10b981;
+}
+
+.dz-preview {
+    width: fit-content;
+    max-width: 100%;
+}
+
+.dz-details {
+    height: 100%;
+    max-width: 100%;
+    overflow: hidden;
+}
+
+.dz-remove {
+    position: absolute;
+    top: 0;
+    right: 0;
+    z-index: 20;
+    background-color: #f87171;
+    cursor: pointer;
+}
+
+.dz-remove svg {
+    width: 1rem;
+    height: 1rem;
+    stroke: white;
+}
+
+.dz-filename {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    max-width: 6rem;
+}
+
+.dz-error-message {
+    z-index: 1000;
+    background-color: #f87171;
+    color: white;
+    cursor: pointer;
+    display: none;
+    position: absolute;
+    opacity: 0;
+    transition: opacity 0.3s;
+    font-size: 0.75rem;
+    padding: 0.25rem;
+    top: 100%;
+    margin-top: 0.5rem;
+    border-radius: 0.375rem;
+    border-width: 1px;
+    border-color: #f87171;
+}
+
+.dz-preview:hover .dz-error-message {
+    display: block;
+    opacity: 1;
+}

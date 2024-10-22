@@ -1,0 +1,49 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import { POST as handle_post } from "@/pages/api/quiz/index.ts";
+import { checkSession } from "@/services/authService";
+import { errorHandler } from "@/errors/errorHandler";
+import type { Session } from "@auth/core/types";
+
+let error: Record<string, string> | null = null;
+let session: Session;
+
+try {
+    session = await checkSession(Astro.request);
+
+    if (Astro.request.method === 'POST') {
+        const response = await handle_post(Astro);
+        const responseData = await response.json();
+
+        if (!responseData.success) {
+            error =  {message: responseData.detail};
+        } else {
+            const data = responseData.data;
+            return Astro.redirect(`/class/${data.class_id}/group/${data.group_id}`);
+        }
+    }
+} catch (error) {
+    return errorHandler(error);
+}
+---
+<BaseLayout title="Inicio">
+    <form method="post"
+        class="bg-white dark:bg-lilac-700 m-auto w-full max-w-md p-8 rounded-xl shadow-2xl text-center trainsition-all duration-500"
+    >
+        <h1 class="text-7xl font-bold text-gray-800 dark:text-white mb-2">REI'S</h1>
+        <p class="text-xl font-medium text-gray-600 dark:text-gray-300 mb-8">Recorrido de Enseñanza Interactivo</p>
+
+        <img src={session.user.image} alt="Profile" class="size-32 mb-4 rounded-full mx-auto" />
+        <h2 class="text-xl text-gray-700 dark:text-white mb-8">Bienvenido, <span class="font-bold">{session.user.name}</span>!</h2>
+
+        <p class="text-lg font-semibold text-gray-700 dark:text-white text-center"></p>
+        {error && <p class="text-red-500 text-center">{error.message}</p>}
+
+        <!-- ENTER CODE -->
+        <input type="text" name="code" class="w-full text-2xl font-semibold text-center p-2 border-2 border-transparent focus:outline-none bg-lilac-100 dark:bg-lilac-800 focus:border-lilac-500 dark:text-white rounded-md transition-colors duration-500 mb-4" placeholder="Ingresa el codigo de la clase" />
+
+        <button type="submit" class="bg-lilac-500 dark:bg-lilac-600 p-2 rounded-md hover:bg-lilac-600 dark:hover:bg-lilac-500 text-2xl text-white font-bold w-full">
+            Entrar
+        </button>
+    </form>
+</BaseLayout>

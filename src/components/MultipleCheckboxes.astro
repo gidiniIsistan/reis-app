@@ -1,0 +1,84 @@
+---
+export interface Checkbox {
+  value: string
+  checked: boolean
+}
+
+const mockedCheckboxes: Checkbox[] = [
+  { value: "Tomas", checked: false },
+  { value: "Juan", checked: false },
+  { value: "Pedro", checked: false },
+  { value: "Maria", checked: false },
+  { value: "Ana", checked: false }
+]
+
+interface Props {
+    endpoint: string,
+    checkboxes: Checkbox[],
+    editable: boolean,
+}
+
+const { endpoint, checkboxes, editable } = Astro.props;
+
+//const selectedText = mockedCheckboxes.filter(checkbox => checkbox.checked).map(checkbox => checkbox.value).join(", ")
+const selectedText = checkboxes.filter(checkbox => checkbox.checked).map(checkbox => checkbox.value).join(", ")
+---
+<div class="flex gap-2 flex-wrap justify-center">
+    {checkboxes.length > 1 && (
+        <label for="all-cb" class="flex items-center cursor-pointer gap-2 bg-lilac-400 px-3 py-1 rounded-2xl">
+            <input type="checkbox" id="all-cb" class="peer hidden" {...(!editable ? { disabled: true } : {})} />
+            <span class="size-4 rounded-full bg-white peer-checked:bg-lilac-500 border-2 border-white transition-colors delay-100"></span>
+            <span class="text-white">Todos</span>
+        </label>
+    )}
+    {checkboxes.map((checkbox, index) => (
+        <label for={'cb-'+index} class="flex items-center cursor-pointer gap-2 bg-lilac-400 px-3 py-1 rounded-2xl">
+        <input type="checkbox" id={'cb-'+index} checked={checkbox.checked} class="peer hidden" value={checkbox.value} {...(!editable ? { disabled: true } : {})} />
+            <span class="size-4 rounded-full bg-white peer-checked:bg-lilac-500 border-2 border-white transition-colors delay-100"></span>
+            <span class="text-white">{checkbox.value}</span>
+        </label>
+    ))}
+</div>
+<input
+    hx-put={endpoint}
+    hx-trigger="change delay:1s"
+    type="text"
+    name="org_users"
+    value={selectedText}
+    class="hidden"
+/>
+<script>
+import htmx from 'htmx.org';
+document.addEventListener("astro:page-load", () => {
+    const checkboxes = document.querySelectorAll('input[id^="cb-"]') as NodeListOf<HTMLInputElement>;
+    const input = document.querySelector('input[name="org_users"]') as HTMLInputElement;
+    const allCheckbox = document.getElementById('all-cb') as HTMLInputElement;
+
+    function updateSelectedText() {
+        const selectedText = Array.from(checkboxes)
+            .filter(checkbox => checkbox.checked)
+            .map(checkbox => checkbox.value)
+            .join(", ");
+        input.value = selectedText;
+        htmx.trigger(input, 'change', { target: input });
+    }
+
+    checkboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', () => {
+            updateSelectedText();
+        });
+    });
+
+    allCheckbox?.addEventListener('change', () => {
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = allCheckbox.checked;
+        });
+        updateSelectedText();
+    });
+
+    // set all checkbox checked if all checkboxes are checked, first time
+    if (checkboxes.length > 1) {
+        allCheckbox.checked = Array.from(checkboxes).every(checkbox => checkbox.checked);
+    };
+});
+</script>

@@ -1,0 +1,63 @@
+---
+export const prerender = true;
+import BackButton from './BackButton.astro';
+---
+<div id="modal" class="modal fixed inset-0 bg-gray-900 bg-opacity-50 items-center justify-center z-50 hidden">
+    <div class="bg-white dark:bg-lilac-900 p-6 rounded-lg shadow-lg w-full max-w-md ">
+        <button id="closeModal" class="absolute top-2 right-2 text-gray-500 hover:text-gray-700">&times;</button>
+        <div class="flex" id="closeModal2"><BackButton href="#" text={true} /></div>
+        <h2 class="text-2xl text-center font-bold text-gray-700 dark:text-white mb-4">Nueva Clase</h2>
+        <form
+            class="flex flex-col flex-1"
+            hx-post=`/api/class/`
+            hx-trigger="submit"
+            hx-swap="none"
+            hx-on--after-request="if (event.detail.successful) window.location.reload();"
+        >
+            <input type="hidden" name="recorrido_id" />
+            <!-- Form to edit the class -->
+            <label for="title" class="text-lg text-gray-800 dark:text-white font-semibold">Titulo de la clase</label>
+            <input type="text" id="title" name="title" class="p-2 border-2 border-transparent focus:outline-none bg-lilac-100 dark:bg-lilac-800 dark:text-white focus:border-lilac-600 rounded-md transition-colors duration-300 mb-4" />
+
+            <label for="desc" class="text-lg text-gray-800 dark:text-white font-semibold">Descripcion</label>
+            <textarea id="desc" name="desc" class="p-2 flex-grow border-2 border-transparent focus:outline-none resize-none bg-lilac-100 dark:bg-lilac-800 dark:text-white focus:border-lilac-600 rounded-md transition-colors duration-300 mb-4"></textarea>
+
+            <div class="flex flex-col mb-4">
+                <label for="start_date" class="text-lg text-gray-800 dark:text-white font-semibold">Fecha de inicio</label>
+                <input type="datetime-local" id="start_date" name="start_date" class="p-2 border border-transparent focus:outline-none bg-lilac-100 dark:bg-lilac-800 dark:text-white focus:border-lilac-600 rounded-md transition-colors duration-300" />
+            </div>
+
+            <div class="flex flex-col mb-4">
+                <label for="end_date" class="text-lg text-gray-800 dark:text-white font-semibold">Fecha de finalizacion</label>
+                <div class="flex items-center flex-1">
+                    <input id="all-day-checkbox" type="checkbox"checked class="peer size-5 mr-2">
+                    <p class="hidden peer-checked:flex text-lg font-semibold flex-1">Todo el día</p>
+                    <input type="datetime-local" id="end_date" name="end_date" class="peer-checked:hidden p-2 flex-1 border border-transparent focus:outline-none bg-lilac-100 dark:bg-lilac-800 dark:text-white focus:border-lilac-600 rounded-md transition-colors duration-300" />
+                </div>
+            </div>
+
+            <button type="submit" id="sendModal" class="bg-lilac-400 dark:bg-lilac-600 px-6 py-2 rounded-lg hover:bg-lilac-500 dark:hover:bg-lilac-800 text-2xl text-white font-semibold">Crear clase</button>
+        </form>
+    </div>
+</div>
+<script>
+    import { currentRecorrido } from '@/store.ts'
+
+    currentRecorrido.subscribe(recorridoId => {
+        const recorridoInput = document.querySelector('input[name="recorrido_id"]') as HTMLInputElement;
+        if (recorridoInput) {
+            recorridoInput.value = String(recorridoId);
+        }
+    });
+
+    document.addEventListener('astro:page-load', () => {
+        const allDayCheckbox = document.getElementById('all-day-checkbox') as HTMLInputElement;
+        const endDateInput = document.getElementById('end_date') as HTMLInputElement;
+
+        allDayCheckbox?.addEventListener('change', () => {
+            if (allDayCheckbox.checked) {
+                endDateInput.value = '';
+            }
+        });
+    });
+</script>

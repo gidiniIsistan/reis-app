@@ -1,0 +1,46 @@
+---
+import SourceCard from "@/components/SourceCard.astro";
+import {HttpError} from "@/errors/HttpError";
+import {errorHandler} from "@/errors/errorHandler";
+import {checkSession} from "@/services/authService";
+import {getDxQuestionById} from "@/services/dxQuestionService";
+import {createSource} from "@/services/sourceService";
+
+export const partial = true;
+var data = {
+    id: '',
+    type: ''
+};
+
+try {
+    if (Astro.request.method !== 'POST') {
+        throw new HttpError(405, 'Method Not Allowed', `Method ${Astro.request.method} is not allowed`, { value: 'POST' });
+    }
+
+    const body = await Astro.request.formData();
+    const type = body.get('type') as string;
+    const dx_question_id = body.get('dx_question_id') as string;
+
+    if (!type || !dx_question_id) {
+        throw new HttpError(400, 'Bad Request', 'Missing type or dx_question_id');
+    }
+
+    const session = await checkSession(Astro.request);
+
+    const question = await getDxQuestionById(dx_question_id, session.user.id);
+    if (!question) {
+        throw new HttpError(404, 'Not Found', 'Question not found', {value: dx_question_id});
+    }
+
+    const result = await createSource(type, dx_question_id);
+    if (!result) {
+        throw new HttpError(500, 'Internal Server Error', 'Failed to create source');
+    }
+
+    data.id = result.id;
+    data.type = type;
+} catch (error) {
+    return errorHandler(error);
+}
+---
+<SourceCard id={data.id} type={data.type} details='' editable={true} />

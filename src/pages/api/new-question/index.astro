@@ -1,0 +1,45 @@
+---
+import NewQuestionRow from '@/components/NewQuestionRow.astro';
+import {HttpError} from '@/errors/HttpError';
+import {checkSession} from '@/services/authService';
+import {getQuiz} from '@/services/quizService';
+import {insertNewQuestion} from '@/services/newQuestionService';
+import {errorHandler} from '@/errors/errorHandler';
+
+export const partial = true;
+var data: Record<string, any> = {};
+
+try {
+    if (Astro.request.method !== 'POST') {
+        throw new HttpError(405, 'Method Not Allowed', `Method ${Astro.request.method} is not allowed`, { value: 'POST' });
+    }
+
+    const body = await Astro.request.formData();
+    const question = body.get('question') as string;
+    const class_id = body.get('class_id') as string;
+    const group_id = body.get('group_id') as string;
+
+    if (!question || !class_id || !group_id) {
+        throw new HttpError(400, 'Bad Request', 'Missing required fields');
+    }
+
+    const session = await checkSession(Astro.request);
+
+    const quiz = await getQuiz(class_id, group_id, session.user.id);
+    if (!quiz) {
+        throw new HttpError(404, 'Not Found', 'Quiz not found');
+    }
+
+    data = await insertNewQuestion({
+        question,
+        class_id,
+        group_id
+    });
+    if (!data) {
+        throw new HttpError(500, 'Internal Server Error', 'Failed to insert new question');
+    }
+} catch (error) {
+    return errorHandler(error);
+}
+---
+<NewQuestionRow id={data.id} question={data.question} edit={true} />

@@ -1,0 +1,37 @@
+---
+interface Props {
+    id: string;
+    question: string;
+    edit: boolean;
+}
+const { id, question, edit } = Astro.props;
+---
+<tr class="border-b dark:border-lilac-400" id={"nq-row-" + id}>
+    <td class="py-4 pl-3 flex-1">
+        <input
+            hx-put={`/api/new-question/${id}`}
+            hx-trigger="keyup changed delay:1500ms"
+            hx-swap="none"
+            name='question'
+            placeholder="Escribe la pregunta.."
+            value={question}
+            {...(!edit ? { disabled: true } : {})}
+            class="p-1 w-full dark:bg-lilac-700 border-b-2 dark:border-b-lilac-800 focus:border-b-lilac-500 dark:focus:border-b-lilac-600 focus:outline-none transition-colors"
+        />
+    </td>
+    {edit &&
+    <td class="py-4 pr-3 text-center">
+        <button
+            type="button"
+            hx-delete=`/api/new-question/${id}`
+            hx-params="none"
+            hx-target={"#nq-row-" + id}
+            hx-swap="delete transition:true"
+            class="text-red-500 hover:-translate-y-1 hover:scale-110 transition ease-in-out delay-75"
+        >
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6 inline-block"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+            </svg>
+        </button>
+    </td>
+    }
+</tr>

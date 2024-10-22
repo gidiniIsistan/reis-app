@@ -1,0 +1,95 @@
+---
+import { HttpError } from "@/errors/HttpError";
+import Card from "./Card.astro";
+import { type Props as CardProps } from "./Card.astro";
+import { GET as GET_QUESTIONS } from "@/pages/api/quiz/[class_id]/[group_id]/dx-questions.ts";
+import { checkSession } from "@/services/authService";
+import { errorHandler } from "@/errors/errorHandler";
+
+const { class_id, group_id } = Astro.params;//TODO: hay que sacarlos de otro lado
+let result: CardProps[] = [];
+let teacher = false;
+
+try {
+    const session = await checkSession(Astro.request);
+    teacher = session?.user.role === "teacher";
+
+    if (!class_id || !group_id) {
+        throw new HttpError(400, 'Bad Request', "Missing class_id or group_id");
+    }
+
+    const response = await GET_QUESTIONS(Astro);
+    const responseData = await response.json();
+
+    if (!responseData.success) {
+        throw new HttpError(responseData.status, responseData.title, responseData.detail);
+    }
+    
+    result = await responseData.data;
+
+} catch (error) {
+    return errorHandler(error);
+}
+---
+<div class="items-center flex flex-col flex-1 min-w-44 max-w-96 p-8 bg-white dark:bg-lilac-700 rounded-t-xl shadow-md" id="questions-box">
+    { !teacher &&
+    <form
+        hx-post="/api/dx-question"
+        hx-swap="beforeend transition:true"
+        hx-target="#card-list"
+        class="w-full flex flex-col"
+    >
+        <input type="hidden" name="group_id" value={group_id} />
+        <input type="hidden" name="class_id" value={class_id} />
+        <textarea
+            id="question"
+            name="question"
+            oninput="this.style.height = ''; this.style.height = Math.min(parseInt(this.scrollHeight), 100) + 'px'"
+            rows="1"
+            style="scrollbar-width: none; -ms-overflow-style: none;"
+            class="w-full p-2 border-2 border-transparent focus:outline-none resize-none mb-2 bg-lilac-100 dark:bg-lilac-800 focus:border-b-lilac-500 rounded-t-lg transition-colors"
+            placeholder="Ingresa una pregunta derivada"
+        ></textarea>
+        <button type="submit" class="p-1 flex w-full justify-center items-center mb-8 text-white rounded-b-lg cursor-pointer bg-lilac-500 dark:bg-lilac-800 hover:bg-lilac-600 dark:hover:bg-lilac-900 transition-colors" >
+            <h2 class="mr-2 text-lg font-semibold">Agregar Pregunta</h2>
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v6m3-3H9m12 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+            </svg>
+        </button>
+    </form>
+    }
+    <div class="w-full flex-1 overflow-auto">
+        <ul class="grid gap-4" id="card-list">
+            {result.map((card) => ( 
+                <Card id={card.id} question={card.question} class_id={class_id} group_id={group_id}/>
+            ))}
+        </ul>
+        {result.length === 0 && <p id="empty-message" class="text-lg font-semibold text-gray-400 text-center my-auto">Escribir la primera pregunta derivada formulada durante esta clase</p>}
+    </div>
+</div>
+<script>
+    document.addEventListener('astro:page-load', () => {
+        const questionInput = document.getElementById('question') as HTMLTextAreaElement;
+        const cardList = document.getElementById('card-list');
+        const emptyMessage = document.getElementById('empty-message');
+
+        if (!questionInput || !cardList || !emptyMessage) {
+            return;
+        }
+
+        // AGREGAR PREGUNTA
+        document.addEventListener('htmx:afterSwap', function(event) {
+            const customEvent = event as CustomEvent;
+            if (customEvent.detail?.target.id === 'card-list') {
+                // Limpia el valor del input
+                questionInput.value = '';
+                //comprueba si hay elementos en la lista, si hay oculta id="empty-message", si no muestra id="empty-message"
+                if (cardList.children.length > 0) {
+                    emptyMessage.classList.add('hidden');
+                } else {
+                    emptyMessage.classList.remove('hidden');
+                }
+            }
+        });
+    });
+</script>

@@ -1,0 +1,57 @@
+---
+export const prerender = false;
+import QuizLayout from '@/layouts/QuizLayout.astro';
+import NewQuestionsTable from '@/components/NewQuestionsTable.astro';
+import { errorHandler } from '@/errors/errorHandler';
+import { checkSession } from '@/services/authService';
+import { HttpError } from '@/errors/HttpError';
+import {GET as fetch_new_questions} from "@/pages/api/quiz/[class_id]/[group_id]/new-questions";
+
+const { class_id, group_id } = Astro.params;
+let questions = [];
+let teacher = false;
+
+try {
+    if (!class_id || !group_id ) {
+        throw new HttpError(400, 'Bad request', 'Missing class_id or group_id');
+    }
+
+    const session = await checkSession(Astro.request);
+    teacher = session.user.role === "teacher";
+
+    const response = await fetch_new_questions(Astro);
+    const responseData = await response.json();
+
+    if (!responseData.success) {
+        throw new HttpError(responseData.status, responseData.title, responseData.detail);
+    }
+    questions = responseData.data;
+} catch (error) {
+    return errorHandler(error);
+}
+---
+<QuizLayout title="Nuevas Preguntas">
+    <div class="flex flex-col flex-1 p-8 gap-4 overflow-hidden">
+        <h2 class="text-lg font-semibold text-center dark:text-white">Agrega nuevas preguntas que hayan surgido durante la clase.</h2>
+        {!teacher && <form
+            hx-post="/api/new-question"
+            hx-swap="beforeend transition:true"
+            hx-target="#new-questions-list"
+            class="w-full flex gap-2"
+        >
+            <input type="hidden" name="group_id" value={group_id} />
+            <input type="hidden" name="class_id" value={class_id} />
+            <input
+                id="new-question-input"
+                name="question"
+                placeholder="Escribe una pregunta"
+                class="flex-1 p-2 bg-lilac-100 dark:bg-lilac-800 rounded-l-lg border-2 border-transparent focus:border-lilac-500 focus:outline-none transition-colors"
+            />
+            <button type="submit" class="p-2 rounded-r-lg bg-lilac-500 dark:bg-lilac-800 hover:bg-lilac-600 dark:hover:bg-lilac-900 transition-colors" >
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6 text-white"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v6m3-3H9m12 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                </svg>
+            </button>
+        </form>}
+        <NewQuestionsTable questions={questions} editable={!teacher} />
+    </div>
+</QuizLayout>

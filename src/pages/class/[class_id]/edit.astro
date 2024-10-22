@@ -1,0 +1,102 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import BackButton from '@/components/BackButton.astro';
+import { HttpError } from '@/errors/HttpError';
+import { type ClassType } from '@/services/classService';
+import { GET as fetch_class } from '@/pages/api/class/[class_id]';
+
+const { class_id } = Astro.params;
+let cls: ClassType;
+
+try {
+    if (!class_id) {
+        throw new HttpError(400, 'Bad request', 'Missing class_id');
+    }
+
+    const response = await fetch_class(Astro);
+    const responseData = await response.json();
+
+    if (!responseData.success) {
+        throw new HttpError(responseData.status, responseData.title, responseData.detail);
+    }
+
+    cls = responseData.data;
+
+} catch (error) {
+    return errorHandler(error);
+}
+
+function parseDate(ts:string) {
+    const date = new Date(ts);
+    //console.log(date.toISOString());
+    return date.toISOString().split('T')[0];
+}
+---
+<BaseLayout title="Mis clases">
+    <div class="p-8 max-w-xl mx-auto w-full h-full">
+        <div class="flex flex-col w-full h-full bg-white dark:bg-lilac-700 rounded-lg p-8">
+            <div class="flex items-center justify-between">
+                <BackButton href=`/class/${class_id}/view` text={false} />
+                <h1 class="text-4xl font-bold text-center text-gray-700 dark:text-white">Editar Clase</h1>
+                <a
+                    hx-delete=`/api/class/${class_id}`
+                    hx-params="none"
+                    hx-confirm="¿Estás seguro de que quieres eliminar esta clase?"
+                    hx-on--after-request="if (event.detail.successful) window.location.href = '/class';"
+                    class="text-red-500 cursor-pointer hover:-translate-y-1 hover:scale-110 transition ease-in-out delay-75"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-7">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                    </svg>
+                </a>
+            </div>
+            <hr class="my-4 border-gray-300">
+            <form
+                class="flex flex-col flex-1"
+                hx-put=`/api/class/${class_id}`
+                hx-trigger="submit"
+                hx-swap="none"
+                hx-on--after-request="if (event.detail.successful) window.location.href = '/class';"
+            >
+                <!-- Form to edit the class -->
+                <!-- title -->
+                <label for="title" class="text-lg text-gray-800 dark:text-white font-semibold">Titulo de la clase</label>
+                <input type="text" id="title" name="title" value={cls.title} class="p-2 border-2 border-transparent focus:outline-none bg-lilac-100 dark:bg-lilac-800 dark:text-white focus:border-lilac-600 rounded-md transition-colors duration-300 mb-4" />
+
+                <!-- start_date -->
+                <div class="flex flex-col mb-4">
+                    <label for="start_date" class="text-lg text-gray-800 dark:text-white font-semibold">Fecha de inicio</label>
+                    <input type="date" id="start_date" name="start_date" value={parseDate(cls.start_date)} class="p-2 border-2 border-transparent focus:outline-none bg-lilac-100 dark:bg-lilac-800 dark:text-white focus:border-lilac-600 rounded-md transition-colors duration-300" />
+                </div>
+
+                <!-- end_date -->
+                <div class="flex flex-col mb-4">
+                    <label for="end_date" class="text-lg text-gray-800 dark:text-white font-semibold">Fecha de fin</label>
+                    <div class="flex items-center flex-1">
+                        <input id="all-day-checkbox" type="checkbox"checked class="peer size-5 mr-2">
+                        <p class="hidden flex-1 peer-checked:flex text-lg font-semibold">Todo el día</p>
+                        <input type="date" id="end_date" name="end_date" value={cls.end_date} class="peer-checked:hidden flex-1 p-2 border-2 border-transparent focus:outline-none bg-lilac-100 dark:bg-lilac-800 dark:text-white focus:border-lilac-600 rounded-md transition-colors duration-300" />
+                    </div>
+                </div>
+
+                <!-- desc -->
+                <label for="desc" class="text-lg text-gray-800 dark:text-white font-semibold">Descripcion</label>
+                <textarea id="desc" name="desc" class="p-2 flex-grow border-2 border-transparent focus:outline-none resize-none bg-lilac-100 dark:bg-lilac-800 dark:text-white focus:border-lilac-600 rounded-md transition-colors duration-300 mb-4">{cls.desc}</textarea>
+
+                <button type="submit" class="bg-lilac-400 dark:bg-lilac-600 px-6 py-3 rounded-lg hover:bg-lilac-500 dark:hover:bg-lilac-800 text-2xl text-white font-semibold">Guardar</button>
+            </form>
+        </div>
+    </div>
+</BaseLayout>
+<script>
+    document.addEventListener('astro:page-load', () => {
+        const allDayCheckbox = document.getElementById('all-day-checkbox') as HTMLInputElement;
+        const endDateInput = document.getElementById('end_date') as HTMLInputElement;
+
+        allDayCheckbox?.addEventListener('change', () => {
+            if (allDayCheckbox.checked) {
+                endDateInput.value = '';
+            }
+        });
+    });
+</script>

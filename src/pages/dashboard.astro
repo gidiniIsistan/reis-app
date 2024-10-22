@@ -1,0 +1,93 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import RecorridoTable from "@/components/RecorridoTable.astro";
+import NotificationsCarousel from "@/components/NotificationsCarousel.astro";
+import { checkSession } from "@/services/authService";
+import { HttpError } from "@/errors/HttpError";
+import { getTeacherRecorridos } from "@/services/recorridoService";
+import { getLastestTeacherClasses } from "@/services/classService";
+import { errorHandler } from "@/errors/errorHandler";
+import type { Recorrido } from "@/services/recorridoService";
+import type { ClassType } from "@/services/classService";
+import type { Session } from "@auth/core/types";
+import ClassesCarousel from "@/components/ClassesCarousel.astro";
+import {getUserNotifications, type Notification} from "@/services/notificationService";
+
+let recorridos: Recorrido[];
+let classes: (ClassType & {recorrido_title: string, gen_question: string, teacher: string, teacherImg: string | null})[];
+let session: Session;
+let notifications: Notification[];
+
+try {
+    session = await checkSession(Astro.request);
+    if (session.user.role !== 'teacher') {
+        throw new HttpError(403, 'Forbidden', 'You are not allowed to access this page');
+    }
+
+    const [recorridosRes, classesRes, notificationsRes] = await Promise.all([
+        getTeacherRecorridos(session.user.id),
+        getLastestTeacherClasses(session.user.id, 10),
+        getUserNotifications(session.user.id)
+    ]);
+
+    recorridos = recorridosRes;
+    classes = classesRes;
+    notifications = notificationsRes;
+
+} catch (error) {
+    return errorHandler(error);
+}
+---
+<BaseLayout title="Mis recorridos">
+    <main class="flex flex-col h-full max-w-full gap-8 p-8">
+        <div class="flex gap-8 items-center">
+            <!-- Bienvenida -->
+            <div class="flex flex-col max-w-[50%] h-full items-center bg-white dark:bg-lilac-600 p-8 flex-1 rounded-lg transition-colors">
+                <img src={session.user.image} class="size-20 rounded-full" />
+                <h1 class="text-3xl font-semibold text-gray-700 dark:text-white text-center">Bienvenido
+                    <p>{session.user.name}</p>
+                </h1>
+            </div>
+
+            <!-- Notificaciones -->
+            <div class="flex flex-col h-full min-w-[30%]">
+                <h2 class="text-2xl font-bold text-gray-700 dark:text-white">Notificaciones</h2>
+                <hr class="border-[1px;] border-gray-400 mt-2 mb-4" />
+                {notifications.length > 0
+                    ? <NotificationsCarousel notifications={notifications} />
+                    : <p class="emptyNotificationsMessage text-gray-700 dark:text-gray-300 text-md font-semibold">No tienes notificaciones</p>
+                }
+            </div>
+        </div>
+
+        <!-- Ultimas Clases -->
+        <div class="flex flex-col">
+            <h2 class="text-2xl font-bold text-gray-700 dark:text-white">Ultimas Clases</h2>
+            <hr class="border-[1px;] border-gray-400 mt-2 mb-4" />
+            {classes.length > 0
+                ? <ClassesCarousel classes={classes} />
+                : <p class="emptyClassesMessage text-gray-700 dark:text-gray-300 text-md font-semibold mx-auto py-6">Aqui se veran tus ultimas clases</p>
+            }
+        </div>
+
+        <!-- Mis Recorridos -->
+        <section class="flex flex-col flex-1">
+            <div class="flex justify-between items-center">
+                <h2 class="text-2xl font-bold text-gray-700 dark:text-white">Mis Recorridos</h2>
+                <button
+                    hx-post="/api/recorrido"
+                    hx-on--after-request="if (event.detail.successful) window.location.href = '/recorrido/' + JSON.parse(event.detail.xhr.responseText).data.id + '/edit';"
+                    hx-swap="none"
+                    class="bg-white hover:bg-lilac-500 text-lilac-400 hover:text-white font-semibold text-lg px-4 py-2 rounded-md transition-transform transform hover:scale-110"
+                >Crear Nuevo Recorrido
+                </button>
+            </div>
+            <hr class="border-[1px;] border-gray-400 mt-2 mb-4" />
+            <RecorridoTable recorridos={recorridos} />
+            {recorridos.length === 0 &&
+                <p class="text-gray-700 dark:text-gray-300 text-md font-semibold m-auto">No tienes recorridos creados todavia</p>
+            }
+        </section>
+
+    </main>
+</BaseLayout>

@@ -1,0 +1,41 @@
+---
+import ClassCard from "./ClassCard.astro";
+import { type ClassType } from "@/services/classService";
+
+export interface Props {
+    classes: (ClassType & {recorrido_title: string, gen_question: string, teacher: string, teacherImg: string | null})[];
+}
+
+const { classes } = Astro.props;
+---
+<section class="splide max-w-full" id="splide-classes" aria-label="Splide Basic HTML Example">
+    <div class="splide__track">
+        <ul class="splide__list gap-4">
+            {classes.map((cls) => (
+                <ClassCard 
+                    title={cls.title}
+                    code={cls.entercode}
+                    gen_question={cls.gen_question}
+                    start_date={cls.start_date}
+                    end_date={cls.end_date}
+                    teacher={cls.teacher}
+                    teacherImage={cls.teacherImg}
+                    recorrido_title={cls.recorrido_title}
+                    href={`/class/${cls.id}/view`}
+                    className="splide__slide"
+                />
+            ))}
+        </ul>
+    </div>
+</section>
+<script>
+    import Splide from '@splidejs/splide';
+    document.addEventListener('astro:page-load', () => {
+        new Splide('#splide-classes', {
+            perPage: 3,
+            autoplay: true,
+            interval: 3000,
+            rewind: true,
+        }).mount();
+    });
+</script>

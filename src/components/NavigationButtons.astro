@@ -1,0 +1,25 @@
+---
+export interface Props {
+    save: boolean;
+}
+const { save } = Astro.props;
+---
+<div class="flex justify-center w-full gap-4">
+    <button type="button" id="prev-btn"
+        class="bg-lilac-400 dark:bg-lilac-600 text-white px-6 py-3 rounded-lg hover:bg-lilac-500 dark:hover:bg-lilac-800 text-2xl font-semibold hover:scale-105 transition-all"
+    >
+        Anterior
+    </button>
+    <button type="button" id="next-btn"
+        class="bg-lilac-400 dark:bg-lilac-600 text-white px-6 py-3 rounded-lg hover:bg-lilac-500 dark:hover:bg-lilac-800 text-2xl font-semibold hover:scale-105 transition-all"
+    >
+        Siguiente
+    </button>
+    { save &&
+    <button type="submit" id="save-btn"
+        class="bg-lilac-400 dark:bg-lilac-600 text-white px-6 py-3 rounded-lg hover:bg-lilac-500 dark:hover:bg-lilac-800 text-2xl font-semibold hover:scale-105 transition-all"
+    >
+        Guardar
+    </button>
+    }
+</div>

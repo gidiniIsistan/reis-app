@@ -1,0 +1,69 @@
+---
+export const prerender = true;
+interface Props {
+	dx_question_id: string;
+}
+
+const { dx_question_id } = Astro.props;
+
+const options = [
+    { id: 'book', text: 'Libro' },
+    { id: 'web', text: 'Sitio web' },
+    { id: 'article', text: 'Artículo de investigación' },
+    { id: 'video', text: 'Video' },
+    { id: 'ia', text: 'Chatbot/IA' },
+    { id: 'notes', text: 'Apuntes propios' },
+    { id: 'other', text: 'Otro' }
+];
+---
+<div class="relative inline-block">
+    <div>
+        <button type="button"
+        class="rounded-md bg-white dark:bg-lilac-900 px-3 py-2 text-sm font-semibold text-gray-900 dark:text-white shadow-sm border border-gray-300 dark:border-lilac-800 hover:bg-gray-50 dark:hover:bg-lilac-800" id="new-source-btn">
+            Nueva Fuente +
+        </button>
+    </div>
+    <div id="source-options" class="absolute z-10 mt-2 rounded-md bg-white dark:bg-lilac-800 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none transition-all duration-300 scale-95 opacity-0 pointer-events-none flex flex-col">
+        {options.map(option => (
+            <a href="#" class="block px-2 py-2 text-sm dark:text-white hover:bg-gray-100 dark:hover:bg-lilac-700"
+                hx-post={`/api/source`}
+                hx-vals=`js:{type: '${option.id}', dx_question_id: '${dx_question_id}'}`
+                hx-target="#dynamic-list"
+                hx-swap="beforeend transition:true"
+                >
+                    {option.text}
+            </a>
+        ))}
+    </div>
+</div>
+<script>
+document.addEventListener('astro:page-load', () => {
+    const menuButton = document.getElementById('new-source-btn');
+    const menu = document.getElementById('source-options');
+
+    if (!menuButton || !menu) {
+        console.debug('DEBUG: No se encontraron los elementos del botón o el menú');
+        return;
+    }
+
+    const toggleMenu = () => {
+        const isOpen = menu.classList.contains('scale-100');
+        menu.classList.toggle('scale-100', !isOpen);
+        menu.classList.toggle('opacity-100', !isOpen);
+        menu.classList.toggle('pointer-events-auto', !isOpen);
+        menu.classList.toggle('pointer-events-none', isOpen);
+    };
+
+    menuButton.addEventListener('click', (event) => {
+        event.stopPropagation(); // Evita que el click en el botón cierre el menú
+        toggleMenu();
+    });
+
+    document.addEventListener('click', (event) => {
+        if (event.target instanceof Node && !menu.contains(event.target)) {
+            menu.classList.remove('scale-100', 'opacity-100', 'pointer-events-auto');
+            menu.classList.add('scale-95', 'opacity-0', 'pointer-events-none');
+        }
+    });
+});
+</script>

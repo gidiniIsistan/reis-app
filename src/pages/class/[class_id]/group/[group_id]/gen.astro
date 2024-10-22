@@ -1,0 +1,62 @@
+---
+import QuizLayout from '@/layouts/QuizLayout.astro';
+import ConditionalQuestion from '@/components/ConditionalQuestion.astro';
+import { errorHandler } from '@/errors/errorHandler';
+import { checkSession } from '@/services/authService';
+import type { Quiz } from '@/services/quizService';
+import type { Attachment } from '@/services/quizAttachmentService';
+import { HttpError } from '@/errors/HttpError';
+
+const { class_id, group_id } = Astro.params;
+let quiz: Quiz & { attachments: Attachment[] };
+let teacher = false;
+
+try {
+    const session = await checkSession(Astro.request);
+    teacher = session?.user.role === "teacher";
+
+    if (!class_id || !group_id) {
+        throw new HttpError(400, 'Bad request', 'Missing class_id or group');
+    }
+
+    const response = await fetch(new URL(`/api/quiz/${class_id}/${group_id}?include_attachments=true`, Astro.url).toString(), {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+            'Cookie': Astro.request.headers.get('Cookie') || '',
+        },
+        credentials: 'include',
+    });
+    const responseData = await response.json();
+
+    if (!responseData.success) {
+        throw new HttpError(responseData.status, responseData.title, responseData.detail);
+    }
+    quiz = await responseData.data.quiz;
+    //console.log(quiz);
+
+} catch (error) {
+    return errorHandler(error);
+}
+---
+<QuizLayout title="Pregunta Generatriz">
+    <div class="flex flex-col justify-center items-center flex-1 p-8">
+        <h2 class="text-xl text-center font-semibold mb-4">Lograron responder la pregunta generatriz?</h2>
+        <ConditionalQuestion editable={!teacher} answer={quiz.gen_answer} name="gen_answer" endpoint=`/api/quiz/${class_id}/${group_id}` attachments={quiz.attachments} />
+        {!teacher ?
+        <div class="flex justify-center w-full mt-4">
+            <button
+                id="send-btn"
+                hx-post=`/api/quiz/${class_id}/${group_id}`
+                hx-trigger="click"
+                hx-swap="none"
+                hx-confirm="¿Estás seguro de que quieres enviar los resultados? Luego no podras modificarlos."
+                hx-on--after-request="if (event.detail.successful) window.location.href = '/';"
+                class="bg-lilac-400 dark:bg-lilac-600 text-white px-6 py-3 rounded-lg hover:bg-lilac-500 dark:hover:bg-lilac-800 text-2xl font-semibold hover:scale-105 transition-transform"
+            >
+                Enviar Resultados
+            </button>
+        </div>
+        : <span class="mt-4"></span>}
+    </div>
+</QuizLayout>

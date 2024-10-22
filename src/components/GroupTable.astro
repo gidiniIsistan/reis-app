@@ -1,0 +1,77 @@
+---
+import UserCard from './UserCard.astro';
+import type {User} from "@/services/userService";
+import type {Group} from "@/services/groupService";
+
+export interface Props {
+    users: User[];
+    group: Group;
+    user_id: string;
+}
+const { users, group, user_id } = Astro.props;
+
+const lider = group.lider_id === user_id;
+---
+<!-- Sección de Invitar Usuario y Abandonar Grupo -->
+{lider && <h2 class="text-xl font-semibold text-gray-800 dark:text-white">Invitar Usuario</h2> }
+<div class="flex items-center mb-4">
+    <!-- Invitar Usuario -->
+    {lider && <form
+        hx-post=`/api/group/${group.id}/add-user`
+        hx-swap="beforeend"
+        hx-target="#group-list"
+        class="flex w-1/2"
+    >
+        <input type="email" id="email" name="email" class="flex-1 px-3 py-2 mr-4 dark:bg-lilac-900 border-2 border-transparent focus:outline-none bg-lilac-100 focus:border-lilac-500 rounded-md transition-colors duration-500" placeholder="Correo electrónico" />
+        <input type="hidden" name="del" value={String(lider)} />
+        <button type="submit" class="flex items-center justify-center bg-lilac-500 text-white font-semibold h-full p-2 rounded-lg hover:bg-lilac-600" >
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+            </svg>
+        </button>
+    </form> }
+    <span class="flex-grow"></span>
+    <!-- Abandonar Grupo -->
+    <div class="relative group">
+        <button 
+            hx-delete={lider ? `/api/group/${group.id}` : `/api/group/${group.id}/${user_id}`}
+            hx-trigger="click"
+            hx-confirm={"¿Estás seguro de que quieres abandonar el grupo?" + (lider ? " Todos los usuarios serán eliminados." : "")}
+            hx-on--after-request="if (event.detail.successful) window.location.href = '/';"
+            class="bg-red-500 text-white font-semibold h-full p-2 rounded-lg hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500"
+        >
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M22 10.5h-6m-2.25-4.125a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0ZM4 19.235v-.11a6.375 6.375 0 0 1 12.75 0v.109A12.318 12.318 0 0 1 10.374 21c-2.331 0-4.512-.645-6.374-1.766Z" />
+            </svg>
+        </button>
+        <span class="absolute left-1/2 transform -translate-x-1/2 bottom-full mb-2 hidden group-hover:flex px-2 py-1 bg-gray-800 text-white text-xs rounded-md">Abandonar Grupo</span>
+    </div>
+</div>
+<div class="flex flex-col flex-1 overflow-hidden">
+    <!-- Lista de Usuarios -->
+    <div class="overflow-y-auto shadow-md rounded-lg">
+        <table class="text-sm w-full text-left text-white">
+            <thead class="text-xs uppercase bg-lilac-500">
+                <tr>
+                    <th scope="col" class="py-3"></th>
+                    <th scope="col" class=""></th>
+                    <th scope="col" class="py-3">Nombre</th>
+                    <th scope="col" class="py-3 text-center">Estado</th>
+                    {lider && <th scope="col" class="py-3 text-center">Eliminar</th>}
+                </tr>
+            </thead>
+            <tbody id="group-list">
+                {users.map((user) => (
+                <UserCard id={user.id} groupId={group.id}
+                    name={user.name} email={user.email} image={user.image}
+                    online={new Date(user.last_seen) > new Date(Date.now() - 1000 * 60 * 5)} 
+                    lider={group?.lider_id === user.id}
+                    del={lider}
+                />
+                ))}
+                <!-- Aquí se agregarán dinámicamente las filas -->
+                <p id="empty-message" class="text-lg font-semibold text-gray-500 text-center my-auto hidden">Escribir la primera pregunta derivada formulada durante esta clase</p>
+            </tbody>
+        </table>
+    </div>
+</div>

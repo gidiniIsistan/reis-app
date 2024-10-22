@@ -1,0 +1,50 @@
+---
+import Card from '@/components/Card.astro';
+import {HttpError} from '@/errors/HttpError';
+import {checkSession} from '@/services/authService';
+import {getQuiz} from '@/services/quizService';
+import {createDxQuestion} from '@/services/dxQuestionService';
+import {errorHandler} from '@/errors/errorHandler';
+
+export const partial = true;
+const data = {
+    id: '',
+    text: '',
+    class_id: '',
+    group_id: ''
+}
+
+try {
+    if (Astro.request.method !== 'POST') {
+        throw new HttpError(405, 'Method Not Allowed', `Method ${Astro.request.method} is not allowed`, { value: 'POST' });
+    }
+
+    const body = await Astro.request.formData();
+    const text = body.get('question') as string;
+    const class_id = body.get('class_id') as string;
+    const group_id = body.get('group_id') as string;
+
+    if (!text || !class_id || !group_id) {
+        throw new HttpError(400, 'Bad Request', 'Missing required fields');
+    }
+
+    const session = await checkSession(Astro.request);
+    const quiz = await getQuiz(class_id, group_id, session.user.id);
+    if (!quiz) {
+        throw new HttpError(403, 'Forbidden', 'You are not allowed to create questions for this quiz');
+    }
+
+    const result = await createDxQuestion(class_id, group_id, text);
+    if (!result) {
+        throw new HttpError(500, 'Internal Server Error', 'Failed to create question');
+    }
+
+    data.id = result.id;
+    data.text = text,
+    data.class_id = class_id;
+    data.group_id = group_id;
+} catch (errror) {
+    return errorHandler(error);
+}
+---
+<Card question={data.text} id={data.id} class_id={data.class_id} group_id={data.group_id} />

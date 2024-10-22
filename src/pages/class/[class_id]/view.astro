@@ -1,0 +1,106 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import GroupCard from '@/components/GroupCard.astro';
+import BackButton from '@/components/BackButton.astro';
+import { HttpError } from '@/errors/HttpError';
+import { type ClassType } from '@/services/classService';
+import { GET as fetch_class } from '@/pages/api/class/[class_id]';
+import { GET as fetch_groups } from '@/pages/api/quiz/[class_id]/groups';
+import {errorHandler} from '@/errors/errorHandler';
+
+const { class_id } = Astro.params;
+let cls: ClassType;
+let groups: {leader: string, group_id: string}[] = [];
+
+try {
+    if (!class_id) {
+        throw new HttpError(400, 'Bad request', 'Missing class_id');
+    }
+
+    const [responseClass, responseGroups] = await Promise.all([fetch_class(Astro), fetch_groups(Astro)]);
+    const [classData, groupsData] = await Promise.all([responseClass.json(), responseGroups.json()]);
+
+    if (!classData.success) {
+        throw new HttpError(classData.status, classData.title, classData.detail);
+    }
+    cls = classData.data;
+
+    if (!groupsData.success) {
+        throw new HttpError(groupsData.status, groupsData.title, groupsData.detail);
+    }
+    groups = groupsData.data;
+
+} catch (error) {
+    return errorHandler(error);
+}
+function formatDatetime(ts:string) {
+    const date = new Date(ts);
+    return date.toLocaleString('en-US', { day:"numeric", month:"short", hour: '2-digit', minute: '2-digit', hour12: false });
+}
+---
+<BaseLayout title="Mis clases">
+    <div class="max-w-3xl mx-auto h-full w-full p-8">
+        <div class="flex flex-col w-full h-full bg-white dark:bg-lilac-700 rounded-lg p-8 transition-colors">
+            <div class="flex items-center justify-between gap-4">
+                <BackButton href={`/class?recorrido_id=${cls.recorrido_id}`} text={true} />
+                <h1 class="text-4xl text-center font-bold text-gray-700 dark:text-white">{cls.title}</h1>
+                <a
+                    href=`/class/${class_id}/edit`
+                    class="flex text-lg font-semibold text-lilac-400 dark:text-white hover:text-lilac-500 hover:-translate-y-1 hover:scale-110 transition ease-in-out delay-75"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487Zm0 0L19.5 7.125" />
+                    </svg>
+                    <span class="ml-2">Editar</span>
+                </a>
+            </div>
+            <hr class="border-gray-300 my-4">
+            <div class="flex flex-col flex-1 overflow-hidden">
+                <!-- gen_question -->
+                <p class="text-xl font-medium mb-4 text-center text-gray-700 dark:text-gray-100">{cls.desc}</p>
+                <div class="grid lg:grid-cols-4 sm:grid-cols-2 mb-4">
+                    <div class="flex flex-col justify-between">
+                        <p class="text-sm font-semibold text-gray-800 dark:text-white">Fecha de inicio</p>
+                        <p class="text-md font-semibold text-gray-600 dark:text-gray-300">{formatDatetime(cls.start_date)}</p>
+                    </div>
+                    <div class="flex flex-col justify-between">
+                        <p class="text-sm font-semibold text-gray-800 dark:text-white">Fecha de fin</p>
+                        {cls.end_date ?
+                            <p class="text-md font-semibold text-gray-600 dark:text-gray-300">{formatDatetime(cls.end_date)}</p>
+                        :
+                        <button
+                            hx-put=`/api/class/${class_id}`
+                            hx-swap="none"
+                            hx-trigger="click"
+                            hx-vals=`{"end_date": "${new Date().toISOString()}"}`
+                            hx-confirm="¿Estás seguro de finalizar la clase?"
+                            hx-on--after-request="if (event.detail.successful) window.location.reload();"
+                            class="bg-red-600 px-2 w-fit text-white rounded"
+                        >Finalizar
+                        </button>
+                        }
+                    </div>
+                    <div class="flex flex-col justify-between">
+                        <p class="text-sm font-semibold text-gray-800 dark:text-white">Respuestas</p>
+                        <p class="text-md font-semibold text-gray-600 dark:text-gray-300">{groups.length}</p>
+                    </div>
+                    <div class="flex flex-col justify-between">
+                        <p class="text-sm font-semibold text-gray-800 dark:text-white">Codigo de acceso</p>
+                        <p class="text-md font-semibold text-gray-600 dark:text-gray-300">{cls.entercode}</p>
+                    </div>
+                </div>
+                <!-- Respuestas grupos -->
+                <div class="overflow-y-auto rounded-lg shadow-md">
+                    <ul class="flex flex-col" id="card-list">
+                        {
+                            groups.map((group) => (
+                            <GroupCard groupId={group.group_id} classId={class_id} name={group.leader} />
+                            ))
+                        }
+                        <p id="empty-message" class="text-lg font-semibold text-gray-500 text-center my-auto hidden">Escribir la primera pregunta derivada formulada durante esta clase</p>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</BaseLayout>

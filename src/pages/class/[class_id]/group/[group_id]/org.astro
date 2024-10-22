@@ -1,0 +1,122 @@
+---
+import QuizLayout from '@/layouts/QuizLayout.astro';
+import MultipleCheckboxes from '@/components/MultipleCheckboxes.astro';
+import { type Checkbox } from '@/components/MultipleCheckboxes.astro';
+import { checkSession } from '@/services/authService';
+import { HttpError } from '@/errors/HttpError';
+import type { Quiz } from '@/services/quizService';
+import type { User } from '@/services/userService';
+import { errorHandler } from '@/errors/errorHandler';
+
+const { class_id, group_id } = Astro.params;
+let quiz: Quiz;
+let users: User[] = [];
+let teacher = false;
+
+try {
+    const session = await checkSession(Astro.request);
+    teacher = session?.user.role === "teacher";
+
+    if (!class_id || !group_id) {
+        throw new HttpError(400, 'Bad request', 'Missing class_id or group_id');
+    }
+
+    const response = await fetch(new URL(`/api/quiz/${class_id}/${group_id}?include_users=true`, Astro.url).toString(), {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+            'Cookie': Astro.request.headers.get('Cookie') || '',
+        },
+    });
+    const responseData = await response.json();
+
+    if (!responseData.success) {
+        throw new HttpError(responseData.status, responseData.title, responseData.detail);
+    }
+
+    quiz = await responseData.data.quiz;
+    users = await responseData.data.users;
+    //console.log(result, users);
+} catch (error) {
+    return errorHandler(error);
+}
+
+const mockedCheckboxes: Checkbox[] = [
+  { value: "Tomas", checked: false },
+  { value: "Juan", checked: false },
+  { value: "Pedro", checked: false },
+  { value: "Maria", checked: false },
+  { value: "Ana", checked: false }
+]
+
+const checkboxes: Checkbox[] = users.map(user => ({
+    value: user.name,
+    checked: quiz.org_users.includes(user.name)
+}));
+---
+<QuizLayout title="Organizacion del grupo">
+    <div class="flex flex-col flex-1 p-8 overflow-auto justify-around">
+        <!-- Group Organization -->
+        <div>
+            <h2 class="text-lg font-semibold text-center dark:text-white mb-4">Indicar la organización al interior del grupo para responder a todas las preguntas derivadas de esa clase.</h2>
+            <div class="flex flex-col gap-8 mb-4" id="options" data-class-id={class_id} data-group-id={group_id}>
+
+                <label for="option1" class="w-full cursor-pointer flex items-center group">
+                    <input type="radio" id="option1" name="option" value=1 class="hidden peer"
+                        {...quiz.org_value === 1 ? { checked: true } : {}}
+                        {...(teacher ? { disabled: true } : {})}
+                    />
+                    <span class="peer-checked:bg-lilac-500 dark:peer-checked:bg-lilac-600 text-transparent peer-checked:text-white rounded-full bg-lilac-200 dark:bg-lilac-800  mr-4 p-2 transition-colors">
+                        <svg class="size-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+                        </svg>
+                    </span>
+                    <p class="text-white rounded-lg bg-lilac-500 dark:bg-lilac-600 shadow-md border-2 border-transparent peer-checked:border-lilac-700 dark:peer-checked:border-lilac-800 p-4 flex-1 transition-colors">De forma conjunta: todos respondieron todas las preguntas y luego armaron respuestas en común.</p>
+                </label>
+
+
+                <label for="option2" class="w-full cursor-pointer flex items-center group">
+                    <input type="radio" id="option2" name="option" value=2 class="hidden peer"
+                        {...quiz.org_value === 2 ? { checked: true } : {}}
+                        {...(teacher ? { disabled: true } : {})}
+                    />
+                    <span class="peer-checked:bg-lilac-500 dark:peer-checked:bg-lilac-600 text-transparent peer-checked:text-white rounded-full bg-lilac-200 dark:bg-lilac-800 mr-4 p-2 transition-colors">
+                        <svg class="size-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+                        </svg>
+                    </span>
+                    <p class="text-white rounded-lg bg-lilac-500 dark:bg-lilac-600 shadow-md border-2 border-transparent peer-checked:border-lilac-700 dark:peer-checked:border-lilac-800 p-4 flex-1 transition-colors">Distribución de preguntas: se repartieron preguntas, tareas, etc según los integrantes del grupo.</p>
+                </label>
+
+
+                <label for="option3" class="w-full cursor-pointer flex items-center group">
+                    <input type="radio" id="option3" name="option" value=3 class="hidden peer"
+                        {...quiz.org_value === 3 ? { checked: true } : {}}
+                        {...(teacher ? { disabled: true } : {})}
+                    />
+                    <span class="peer-checked:bg-lilac-500 dark:peer-checked:bg-lilac-600 text-transparent peer-checked:text-white rounded-full bg-lilac-200 dark:bg-lilac-800 mr-4 p-2 transition-colors">
+                        <svg class="size-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+                        </svg>
+                    </span>
+                    <textarea
+                        class="bg-lilac-500 dark:bg-lilac-600 text-white rounded-lg w-full p-4 resize-none focus:outline-none border-2 border-transparent peer-checked:border-lilac-700 dark:peer-checked:border-lilac-800 transition-colors"
+                        placeholder="Otra opción"
+                        id="otherOption"
+                        readonly={teacher ? true : false}
+                        rows="1"
+                    >{quiz.org_value === 3 ? quiz.org_answer : ''}</textarea>
+                </label>
+            </div>
+        </div>
+
+        <!-- Present Users -->
+        <div>
+            <h2 class="text-lg font-semibold text-center dark:text-white mb-4">Selecciona lo integrantes que estuvieron presentes en la clase</h2>
+            <MultipleCheckboxes endpoint={`/api/quiz/${class_id}/${group_id}`} checkboxes={checkboxes} editable={!teacher} />
+        </div>
+    </div>
+    {!teacher && <script is:raw type="module">
+        import "/scripts/org.js";
+    </script>}
+</QuizLayout>
